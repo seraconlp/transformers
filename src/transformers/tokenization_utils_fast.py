@@ -19,7 +19,6 @@
 
 import json
 import os
-import warnings
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -357,23 +356,12 @@ class PreTrainedTokenizerFast(PreTrainedTokenizerBase):
         return_offsets_mapping: bool = False,
         return_length: bool = False,
         verbose: bool = True,
-        **kwargs
     ) -> BatchEncoding:
 
         if not isinstance(batch_text_or_text_pairs, list):
             raise TypeError(
                 "batch_text_or_text_pairs has to be a list (got {})".format(type(batch_text_or_text_pairs))
             )
-
-        if "is_pretokenized" in kwargs:
-            warnings.warn(
-                "`is_pretokenized` is deprecated and will be removed in a future version, use `is_split_into_words` instead.",
-                FutureWarning,
-            )
-            is_split_into_words = kwargs.pop("is_pretokenized")
-
-        if kwargs:
-            raise ValueError(f"Keyword arguments {kwargs} not recognized.")
 
         # Set the truncation and padding strategy and restore the initial configuration
         self.set_truncation_and_padding(
@@ -430,6 +418,8 @@ class PreTrainedTokenizerFast(PreTrainedTokenizerBase):
                 overflow_to_sample_mapping += [i] * len(toks["input_ids"])
             sanitized_tokens["overflow_to_sample_mapping"] = overflow_to_sample_mapping
 
+        for input_ids in sanitized_tokens["input_ids"]:
+            self._eventual_warn_about_too_long_sequence(input_ids, max_length, verbose)
         return BatchEncoding(sanitized_tokens, sanitized_encodings, tensor_type=return_tensors)
 
     def _encode_plus(
@@ -453,12 +443,6 @@ class PreTrainedTokenizerFast(PreTrainedTokenizerBase):
         verbose: bool = True,
         **kwargs
     ) -> BatchEncoding:
-        if "is_pretokenized" in kwargs:
-            warnings.warn(
-                "`is_pretokenized` is deprecated and will be removed in a future version, use `is_split_into_words` instead.",
-                FutureWarning,
-            )
-            is_split_into_words = kwargs.pop("is_pretokenized")
 
         batched_input = [(text, text_pair)] if text_pair else [text]
         batched_output = self._batch_encode_plus(
@@ -492,6 +476,8 @@ class PreTrainedTokenizerFast(PreTrainedTokenizerBase):
                 batched_output.encodings,
             )
 
+        self._eventual_warn_about_too_long_sequence(batched_output["input_ids"], max_length, verbose)
+
         return batched_output
 
     def convert_tokens_to_string(self, tokens: List[str]) -> str:
@@ -516,7 +502,7 @@ class PreTrainedTokenizerFast(PreTrainedTokenizerBase):
 
     def _save_pretrained(
         self,
-        save_directory: str,
+        save_directory: Union[str, os.PathLike],
         file_names: Tuple[str],
         legacy_format: bool = True,
         filename_prefix: Optional[str] = None,

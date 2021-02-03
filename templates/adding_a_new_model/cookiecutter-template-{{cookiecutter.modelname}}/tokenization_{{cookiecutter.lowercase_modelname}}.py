@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The HuggingFace Inc. team.
+# Copyright {{cookiecutter.authors}} and The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
 """Tokenization classes for {{cookiecutter.modelname}}."""
 
 {%- if cookiecutter.tokenizer_type == "Based on BERT" %}
-from .tokenization_bert import BertTokenizer, BertTokenizerFast
-from .utils import logging
+from ...utils import logging
+from ..bert.tokenization_bert import BertTokenizer
 
 
 logger = logging.get_logger(__name__)
@@ -55,32 +55,52 @@ class {{cookiecutter.camelcase_modelname}}Tokenizer(BertTokenizer):
     max_model_input_sizes = PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES
     pretrained_init_configuration = PRETRAINED_INIT_CONFIGURATION
 
+{%- elif cookiecutter.tokenizer_type == "Based on BART" %}
+from ...utils import logging
+from ..bart.tokenization_bart import BartTokenizer
 
-class {{cookiecutter.camelcase_modelname}}TokenizerFast(BertTokenizerFast):
-    r"""
-    Construct a "fast" {{cookiecutter.modelname}} tokenizer (backed by HuggingFace's `tokenizers` library).
 
-    :class:`~transformers.{{cookiecutter.camelcase_modelname}}TokenizerFast` is identical to :class:`~transformers.BertTokenizerFast` and runs
-    end-to-end tokenization: punctuation splitting and wordpiece.
+logger = logging.get_logger(__name__)
 
-    Refer to superclass :class:`~transformers.BertTokenizerFast` for usage examples and documentation concerning
+PRETRAINED_VOCAB_FILES_MAP = {
+    "vocab_file": {
+        "{{cookiecutter.checkpoint_identifier}}": "https://huggingface.co/{{cookiecutter.checkpoint_identifier}}/resolve/main/vocab.json",
+    },
+    "merges_file": {
+        "{{cookiecutter.checkpoint_identifier}}": "https://huggingface.co/{{cookiecutter.checkpoint_identifier}}/resolve/main/merges.txt",
+    },
+    "tokenizer_file": {
+        "{{cookiecutter.checkpoint_identifier}}": "https://huggingface.co/{{cookiecutter.checkpoint_identifier}}/resolve/main/tokenizer.json",
+    },
+}
+
+PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES = {
+    "{{cookiecutter.checkpoint_identifier}}": 1024,
+}
+
+
+class {{cookiecutter.camelcase_modelname}}Tokenizer(BartTokenizer):
+    """
+    Construct a {{cookiecutter.modelname}} tokenizer.
+
+    :class:`~transformers.{{cookiecutter.camelcase_modelname}}Tokenizer` is identical to :class:`~transformers.BartTokenizer` and runs end-to-end
+    tokenization: punctuation splitting and wordpiece.
+
+    Refer to superclass :class:`~transformers.BartTokenizer` for usage examples and documentation concerning
     parameters.
     """
 
-    vocab_files_names = VOCAB_FILES_NAMES
     pretrained_vocab_files_map = PRETRAINED_VOCAB_FILES_MAP
     max_model_input_sizes = PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES
-    pretrained_init_configuration = PRETRAINED_INIT_CONFIGURATION
+
 {%- elif cookiecutter.tokenizer_type == "Standalone" %}
-import warnings
+from typing import List, Optional
 
 from tokenizers import ByteLevelBPETokenizer
 
-from .tokenization_utils import AddedToken, PreTrainedTokenizer
-from .tokenization_utils_base import BatchEncoding
-from .tokenization_utils_fast import PreTrainedTokenizerFast
-from typing import List, Optional
-from .utils import logging
+from ...tokenization_utils import AddedToken, PreTrainedTokenizer
+from ...tokenization_utils_fast import PreTrainedTokenizerFast
+from ...utils import logging
 
 
 logger = logging.get_logger(__name__)
@@ -105,7 +125,7 @@ class {{cookiecutter.camelcase_modelname}}Tokenizer(PreTrainedTokenizer):
     vocab_files_names = VOCAB_FILES_NAMES
     pretrained_vocab_files_map = PRETRAINED_VOCAB_FILES_MAP
     max_model_input_sizes = PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES
-    model_input_names = ["attention_mask"]
+    model_input_names = ["input_ids", "attention_mask"]
 
     def __init__(
             self,
@@ -233,13 +253,6 @@ class {{cookiecutter.camelcase_modelname}}Tokenizer(PreTrainedTokenizer):
         return len(cls + token_ids_0 + sep + sep + token_ids_1 + sep) * [0]
 
     def prepare_for_tokenization(self, text, is_split_into_words=False, **kwargs):
-        if "is_pretokenized" in kwargs:
-            warnings.warn(
-                "`is_pretokenized` is deprecated and will be removed in a future version, use `is_split_into_words` instead.",
-                FutureWarning,
-            )
-            is_split_into_words = kwargs.pop("is_pretokenized")
-
         add_prefix_space = kwargs.pop("add_prefix_space", self.add_prefix_space)
         if (is_split_into_words or add_prefix_space) and (len(text) > 0 and not text[0].isspace()):
             text = " " + text
@@ -257,7 +270,7 @@ class {{cookiecutter.camelcase_modelname}}TokenizerFast(PreTrainedTokenizerFast)
     vocab_files_names = VOCAB_FILES_NAMES
     pretrained_vocab_files_map = PRETRAINED_VOCAB_FILES_MAP
     max_model_input_sizes = PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES
-    model_input_names = ["attention_mask"]
+    model_input_names = ["input_ids", "attention_mask"]
 
     def __init__(
             self,
@@ -283,29 +296,6 @@ class {{cookiecutter.camelcase_modelname}}TokenizerFast(PreTrainedTokenizerFast)
             **kwargs,
         )
         self.add_prefix_space = add_prefix_space
-
-    def _batch_encode_plus(self, *args, **kwargs) -> BatchEncoding:
-        is_split_into_words = None
-        if "is_pretokenized" in kwargs:
-            warnings.warn(
-                "`is_pretokenized` is deprecated and will be removed in a future version, use `is_split_into_words` instead.",
-                FutureWarning,
-            )
-            is_split_into_words = kwargs.pop("is_pretokenized")
-
-        is_split_into_words = kwargs.get("is_split_into_words", False) if is_split_into_words is None else is_split_into_words
-        return super()._batch_encode_plus(*args, **kwargs)
-
-    def _encode_plus(self, *args, **kwargs) -> BatchEncoding:
-        is_split_into_words = None
-        if "is_pretokenized" in kwargs:
-            warnings.warn(
-                "`is_pretokenized` is deprecated and will be removed in a future version, use `is_split_into_words` instead.",
-                FutureWarning,
-            )
-        is_split_into_words = kwargs.get("is_split_into_words", False) if is_split_into_words is None else is_split_into_words
-        return super()._encode_plus(*args, **kwargs)
-
 
     def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):
         output = [self.bos_token_id] + token_ids_0 + [self.eos_token_id]
@@ -337,6 +327,5 @@ class {{cookiecutter.camelcase_modelname}}TokenizerFast(PreTrainedTokenizerFast)
         if token_ids_1 is None:
             return len(cls + token_ids_0 + sep) * [0]
         return len(cls + token_ids_0 + sep + sep + token_ids_1 + sep) * [0]
-
 
 {% endif %}

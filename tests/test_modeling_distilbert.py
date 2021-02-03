@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Google AI Language Team Authors.
+# Copyright 2020 The HuggingFace Team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -209,7 +209,6 @@ class DistilBertModelTest(ModelTesterMixin, unittest.TestCase):
     test_pruning = True
     test_torchscript = True
     test_resize_embeddings = True
-    test_head_masking = True
 
     def setUp(self):
         self.model_tester = DistilBertModelTester(self)

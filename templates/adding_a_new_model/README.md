@@ -1,3 +1,19 @@
+<!---
+Copyright 2020 The HuggingFace Team. All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Using `cookiecutter` to generate models
 
 This folder contains templates to generate new models that fit the current API and pass all tests. It generates
@@ -66,10 +82,10 @@ Choose from 1, 2 [1]:
 Once the command has finished, you should have a total of 7 new files spread across the repository:
 ```
 docs/source/model_doc/<model_name>.rst
-src/transformers/configuration_<model_name>.py
-src/transformers/modeling_<model_name>.py
-src/transformers/modeling_tf_<model_name>.py
-src/transformers/tokenization_<model_name>.py
+src/transformers/models/<model_name>/configuration_<model_name>.py
+src/transformers/models/<model_name>/modeling_<model_name>.py
+src/transformers/models/<model_name>/modeling_tf_<model_name>.py
+src/transformers/models/<model_name>/tokenization_<model_name>.py
 tests/test_modeling_<model_name>.py
 tests/test_modeling_tf_<model_name>.py
 ```
